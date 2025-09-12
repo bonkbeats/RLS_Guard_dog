@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
 
 export default function StudentDashboard() {
   const [progressList, setProgressList] = useState([])
+  const router = useRouter()
 
   useEffect(() => {
     const fetchProgress = async () => {
@@ -30,6 +32,33 @@ export default function StudentDashboard() {
 
     fetchProgress()
   }, [])
+
+  // Prevent browser back navigation from leaving the dashboard
+  useEffect(() => {
+    // push a state so there's something to pop
+    if (typeof window !== 'undefined' && window.history && window.history.pushState) {
+      window.history.pushState(null, '', window.location.href)
+    }
+
+    const handlePopState = () => {
+      // Attempt to move forward again — blocks the back navigation
+      if (typeof window !== 'undefined' && window.history && window.history.go) {
+        window.history.go(1)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
+  const handleLogout = async (e) => {
+    e?.preventDefault()
+    await supabase.auth.signOut()
+    router.replace('/login') // replace so back button won't go back to dashboard
+  }
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -58,7 +87,7 @@ export default function StudentDashboard() {
         </table>
       )}
 
-      <Link href="/login" className="text-blue-500 mt-6 block">
+      <Link href="/login" onClick={handleLogout} className="text-blue-500 mt-6 block">
         Logout
       </Link>
     </div>

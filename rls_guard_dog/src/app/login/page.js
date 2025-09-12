@@ -9,11 +9,6 @@ export default function Login() {
   const router = useRouter()
 
   const handleLogin = async () => {
-
- 
-
-
-
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return alert(error.message)
 
@@ -28,24 +23,20 @@ export default function Login() {
 
     if (profileError || !profile) return alert('Profile not found. Contact admin.')
 
-    // Redirect based on role
-    if (profile.role === 'student') router.push('/student/dashboard')
-    else router.push('/teacher/dashboard')
+    // Replace current history entry with the dashboard route so login isn't left in history.
+    try {
+      if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+        const target = profile.role === 'student' ? '/student/dashboard' : '/teacher/dashboard'
+        // Replace the current URL in history (extra safety) then call router.replace
+        window.history.replaceState(null, '', target)
+      }
+    } catch (e) {
+      // ignore if browser blocks replaceState
+    }
 
-//        const res = await supabase.auth.signInWithPassword({ email, password })
-// console.log('signIn result', res)
-
-// const user = res.data?.user
-// console.log('user id', user?.id)
-
-// const { data: profile, error: profileError } = await supabase
-//   .from('profiles')
-//   .select('*')
-//   .eq('id', user.id)
-//   .single()
-// console.log('profile', profile, 'profileError', profileError)
-
-
+    // Use router.replace so login page isn't added to history
+    if (profile.role === 'student') router.replace('/student/dashboard')
+    else router.replace('/teacher/dashboard')
   }
 
   return (
